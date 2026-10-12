@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudOps | Troubleshooting Dashboard</title>
+<style>
+:root {
+  --bg:#0b1120;--panel:#121c2e;--panel2:#17243a;
+  --border:#26364e;--text:#edf3ff;--muted:#91a2bc;
+  --green:#35d49a;--blue:#63a5ff;--amber:#ffbd59;--red:#ff6b78;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,"Segoe UI",Arial,sans-serif}
+.layout{display:grid;grid-template-columns:225px minmax(0,1fr);min-height:100vh}
+aside{background:#0e1728;border-right:1px solid var(--border);padding:25px 17px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:36px;font-size:20px;font-weight:750}
+.brand-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#3986ff,#38d6a0);color:#071526}
+.nav-label{margin:24px 10px 10px;color:#71829e;font-size:10px;font-weight:800;letter-spacing:1.6px}
+.nav-item{padding:12px;margin:5px 0;border-radius:9px;color:var(--muted);font-size:13px}
+.nav-item.active{background:#1c3150;color:white;border:1px solid #2c4b72}
+.side-note{margin-top:38px;padding:14px;border:1px solid var(--border);background:var(--panel);border-radius:12px;color:var(--muted);font-size:12px;line-height:1.7}
+.side-note strong{color:var(--green)}
+main{min-width:0;padding:30px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:28px}
+h1{margin:0 0 7px;font-size:clamp(22px,3vw,30px);letter-spacing:-.8px}
+.subtitle{color:var(--muted);font-size:13px;line-height:1.7}
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid #225c4b;border-radius:30px;color:var(--green);background:#102c29;font-size:12px;white-space:nowrap}
+.dot{width:8px;height:8px;background:currentColor;border-radius:50%}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.card{min-width:0;padding:21px;border:1px solid var(--border);border-radius:15px;background:var(--panel)}
+.metric-top{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+.metric-icon{display:grid;place-items:center;width:35px;height:35px;border-radius:10px;background:var(--panel2);color:var(--blue);font-size:17px}
+.metric-value{margin:18px 0 6px;font-size:34px;font-weight:750;letter-spacing:-1px}
+.unit{color:var(--muted);font-size:15px;font-weight:500}
+.metric-foot{min-height:18px;color:var(--muted);font-size:11px}
+.progress{height:6px;margin-top:17px;overflow:hidden;background:#26344a;border-radius:8px}
+.progress-bar{width:0%;height:100%;border-radius:inherit;transition:width .5s ease}
+.green{color:var(--green)}.blue{color:var(--blue)}.amber{color:var(--amber)}.red{color:var(--red)}
+.green-bg{background:var(--green)}.blue-bg{background:var(--blue)}.amber-bg{background:var(--amber)}
+.section{margin-top:22px}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+h2{margin:0;font-size:17px}
+.tag{color:var(--muted);font-size:11px}
+.lower-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+.health-row{display:flex;align-items:center;gap:18px;margin:24px 0}
+.donut{display:grid;place-items:center;flex:0 0 115px;width:115px;height:115px;border-radius:50%;background:conic-gradient(var(--green) 0 100%,#263349 100% 100%);position:relative}
+.donut:before{content:"";position:absolute;width:88px;height:88px;border-radius:50%;background:var(--panel)}
+.donut-inner{z-index:1;text-align:center}
+.donut-inner strong{display:block;font-size:23px}
+.donut-inner span{color:var(--muted);font-size:10px}
+.health-description{color:var(--muted);font-size:12px;line-height:1.8}
+.resource-row{display:grid;grid-template-columns:65px 1fr 42px;gap:12px;align-items:center;margin:19px 0;font-size:12px}
+.resource-row .progress{margin:0}.resource-row strong{text-align:right}
+.info-row{display:flex;justify-content:space-between;gap:14px;padding:13px 0;border-bottom:1px solid var(--border);font-size:12px}
+.info-row:last-child{border-bottom:0}
+.info-row span{color:var(--muted)}.info-row strong{text-align:right;overflow-wrap:anywhere}
+.button-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.btn{padding:10px 13px;border:1px solid #344762;border-radius:9px;background:#1a2b43;color:var(--text);cursor:pointer;font-size:12px}
+.btn:hover{background:#29415f}.btn.primary{background:#2866bb;border-color:#3984e8}
+.btn.danger{background:#3b202d;border-color:#773a4b;color:#ff9ba5}
+.output{min-height:125px;margin-top:14px;padding:15px;border:1px solid #273a53;border-radius:10px;background:#09111f;color:#a9bdd8;font-family:Consolas,"Courier New",monospace;font-size:12px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.incident{padding:14px;border:1px solid var(--border);border-radius:10px;margin-top:12px;color:var(--muted);font-size:12px;line-height:1.7}
+.incident strong{color:var(--text)}
+footer{padding:24px 0 8px;color:#71829e;font-size:11px;line-height:1.7}
+@media(max-width:1000px){.layout{grid-template-columns:190px minmax(0,1fr)}main{padding:22px}.grid{grid-template-columns:1fr}.lower-grid{grid-template-columns:1fr}}
+@media(max-width:650px){.layout{grid-template-columns:1fr}aside{display:none}main{padding:17px}.topbar{align-items:flex-start;flex-direction:column}.health-row{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside>
+  <div class="brand"><div class="brand-icon">⌘</div><span>CloudOps<span class="blue">.</span></span></div>
+  <div class="nav-label">WORKSPACE</div>
+  <div class="nav-item active">▦ &nbsp; Overview</div>
+  <div class="nav-item">◉ &nbsp; System Health</div>
+  <div class="nav-item">⌁ &nbsp; Diagnostics</div>
+  <div class="nav-item">▤ &nbsp; Incident Reports</div>
+  <div class="nav-label">TOOLS</div>
+  <div class="nav-item">⌘ &nbsp; Linux Support</div>
+  <div class="nav-item">◇ &nbsp; Runbooks</div>
+  <div class="side-note"><strong>● LOCAL LAB</strong><br>Cloud support practice environment.<br>No AWS resources are created.</div>
+</aside>
+<main>
+  <div class="topbar">
+    <div><h1>Infrastructure Overview</h1><div class="subtitle">Linux system monitoring and cloud troubleshooting workspace</div></div>
+    <div class="status-pill" id="status-pill"><span class="dot"></span><span id="system-status">Connecting...</span></div>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <div class="metric-top"><span>CPU UTILIZATION</span><span class="metric-icon">⌁</span></div>
+      <div class="metric-value"><span id="cpu-value">--</span><span class="unit">%</span></div>
+      <div class="metric-foot">Live Linux CPU usage</div>
+      <div class="progress"><div class="progress-bar blue-bg" id="cpu-bar"></div></div>
+    </section>
+    <section class="card">
+      <div class="metric-top"><span>MEMORY UTILIZATION</span><span class="metric-icon">▤</span></div>
+      <div class="metric-value"><span id="memory-value">--</span><span class="unit">%</span></div>
+      <div class="metric-foot" id="memory-foot">Waiting for API data</div>
+      <div class="progress"><div class="progress-bar green-bg" id="memory-bar"></div></div>
+    </section>
+    <section class="card">
+      <div class="metric-top"><span>DISK UTILIZATION</span><span class="metric-icon">▱</span></div>
+      <div class="metric-value"><span id="disk-value">--</span><span class="unit">%</span></div>
+      <div class="metric-foot" id="disk-foot">Root filesystem</div>
+      <div class="progress"><div class="progress-bar amber-bg" id="disk-bar"></div></div>
+    </section>
+  </div>
+
+  <section class="section">
+    <div class="section-heading"><h2>System Health</h2><span class="tag" id="last-updated">Waiting for first update</span></div>
+    <div class="lower-grid">
+      <div class="card">
+        <div class="metric-top"><span>RESOURCE HEALTH</span><span class="tag">Live metrics</span></div>
+        <div class="health-row">
+          <div class="donut" id="health-donut"><div class="donut-inner"><strong id="health-score">--%</strong><span>HEALTH SCORE</span></div></div>
+          <div class="health-description" id="health-description">Connecting to local monitoring API...</div>
+        </div>
+        <div class="resource-row"><span>CPU</span><div class="progress"><div class="progress-bar blue-bg" id="cpu-label-bar"></div></div><strong id="cpu-label">--%</strong></div>
+        <div class="resource-row"><span>Memory</span><div class="progress"><div class="progress-bar green-bg" id="memory-label-bar"></div></div><strong id="memory-label">--%</strong></div>
+        <div class="resource-row"><span>Disk</span><div class="progress"><div class="progress-bar amber-bg" id="disk-label-bar"></div></div><strong id="disk-label">--%</strong></div>
+      </div>
+      <div class="card">
+        <div class="metric-top"><span>HOST INFORMATION</span><span class="tag">FastAPI + psutil</span></div>
+        <div style="margin-top:16px">
+          <div class="info-row"><span>Hostname</span><strong id="hostname">Loading...</strong></div>
+          <div class="info-row"><span>Platform</span><strong id="platform">Loading...</strong></div>
+          <div class="info-row"><span>Memory</span><strong id="memory-detail">--</strong></div>
+          <div class="info-row"><span>Disk</span><strong id="disk-detail">--</strong></div>
+          <div class="info-row"><span>Uptime</span><strong id="uptime">--</strong></div>
+          <div class="info-row"><span>API endpoint</span><strong>/api/health</strong></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-heading"><h2>Diagnostic Tools</h2><span class="tag">Local read-only checks</span></div>
+    <div class="card">
+      <div class="subtitle">Run a diagnostic action to practice a support engineer's investigation workflow. These browser checks do not execute shell commands.</div>
+      <div class="button-row">
+        <button class="btn primary" id="refresh-btn">↻ Refresh Metrics</button>
+        <button class="btn" id="health-btn">Check API Health</button>
+        <button class="btn" id="ready-btn">Check Readiness</button>
+        <button class="btn" id="clear-btn">Clear Output</button>
+      </div>
+      <div class="output" id="terminal-output">CloudOps Diagnostic Console
+--------------------------------
+Initializing local monitoring dashboard...
+Waiting for API response.</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-heading"><h2>Incident Practice</h2><span class="tag">Training simulation</span></div>
+    <div class="card">
+      <div class="subtitle">Practice identifying high resource utilization. This simulation does not change your actual system resources.</div>
+      <div class="incident"><strong>Scenario: High CPU utilization</strong><br>A monitoring alert reports CPU usage above the warning threshold. What should a support engineer check first?</div>
+      <div class="button-row">
+        <button class="btn primary" id="scenario-btn">Show Investigation Steps</button>
+        <button class="btn danger" id="reset-btn">Reset Scenario</button>
+      </div>
+      <div class="output" id="incident-output">No scenario selected. Select "Show Investigation Steps" to begin.</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-heading"><h2>Support Runbook</h2><span class="tag">Investigation checklist</span></div>
+    <div class="card">
+      <div class="info-row"><span>1. Confirm the symptom</span><strong>Check alert and impact</strong></div>
+      <div class="info-row"><span>2. Check resource usage</span><strong>CPU, memory, disk</strong></div>
+      <div class="info-row"><span>3. Investigate processes</span><strong>top, ps, free, df</strong></div>
+      <div class="info-row"><span>4. Inspect system logs</span><strong>journalctl, /var/log</strong></div>
+      <div class="info-row"><span>5. Identify root cause</span><strong>Correlate evidence</strong></div>
+      <div class="info-row"><span>6. Document resolution</span><strong>Impact, actions, outcome</strong></div>
+    </div>
+  </section>
+
+  <footer>
+    CloudOps Troubleshooting Lab · Local development project<br>
+    Metrics come from your Linux environment through FastAPI and psutil. The health score is an educational indicator, not an AWS health assessment. Refresh interval: 5 seconds.
+    <div id="system-foot">API connection pending.</div>
+  </footer>
+</main>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+
+  function log(message) {
+    const output = $("terminal-output");
+    output.textContent += "\n[" + new Date().toLocaleTimeString() + "] " + message;
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function setBar(id, value) {
+    $(id).style.width = Math.max(0, Math.min(100, value)) + "%";
+  }
+
+  function formatUptime(seconds) {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return days + "d " + hours + "h " + minutes + "m";
+  }
+
+  function setStatus(status, color) {
+    $("system-status").textContent = status;
+    $("status-pill").style.color = color;
+    $("status-pill").style.borderColor = color;
+  }
+
+  async function refreshMetrics() {
+    try {
+      const response = await fetch("/api/health", {cache:"no-store"});
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const data = await response.json();
+
+      const cpu = Math.round(data.cpu_percent);
+      const memory = Math.round(data.memory_percent);
+      const disk = Math.round(data.disk_percent);
+
+      $("cpu-value").textContent = cpu;
+      $("memory-value").textContent = memory;
+      $("disk-value").textContent = disk;
+
+      $("cpu-label").textContent = cpu + "%";
+      $("memory-label").textContent = memory + "%";
+      $("disk-label").textContent = disk + "%";
+
+      setBar("cpu-bar", cpu);
+      setBar("memory-bar", memory);
+      setBar("disk-bar", disk);
+      setBar("cpu-label-bar", cpu);
+      setBar("memory-label-bar", memory);
+      setBar("disk-label-bar", disk);
+
+      $("memory-foot").textContent = data.memory_used_mb.toLocaleString() +
+        " MB used of " + data.memory_total_mb.toLocaleString() + " MB";
+      $("disk-foot").textContent = data.disk_used_gb + " GB used of " + data.disk_total_gb + " GB";
+
+      $("hostname").textContent = data.hostname;
+      $("platform").textContent = data.platform;
+      $("memory-detail").textContent = data.memory_used_mb.toLocaleString() +
+        " / " + data.memory_total_mb.toLocaleString() + " MB";
+      $("disk-detail").textContent = data.disk_used_gb + " / " + data.disk_total_gb + " GB";
+      $("uptime").textContent = formatUptime(data.uptime_seconds);
+
+      const warnings = [];
+      if (cpu >= 85) warnings.push("CPU usage is high");
+      if (memory >= 85) warnings.push("Memory usage is high");
+      if (disk >= 85) warnings.push("Disk usage is high");
+
+      const score = Math.max(0, 100 -
+        (cpu >= 85 ? 20 : 0) -
+        (memory >= 85 ? 25 : 0) -
+        (disk >= 85 ? 30 : 0));
+
+      $("health-score").textContent = score + "%";
+      $("health-donut").style.background = "conic-gradient(var(--green) 0 " +
+        score + "%, #263349 " + score + "% 100%)";
+
+      $("health-description").textContent = warnings.length
+        ? warnings.join(". ") + ". Investigate the affected resource."
+        : "Resource utilization is below configured warning thresholds. Continue monitoring.";
+
+      setStatus(warnings.length ? "Warning" : "Healthy",
+        warnings.length ? "var(--amber)" : "var(--green)");
+
+      $("last-updated").textContent = "Updated " + new Date(data.timestamp).toLocaleTimeString();
+      $("system-foot").textContent = "Live API · " + data.hostname + " · Updated " +
+        new Date(data.timestamp).toLocaleTimeString();
+    } catch (error) {
+      setStatus("API Offline", "var(--red)");
+      $("health-description").textContent = "Cannot retrieve metrics. Check that FastAPI is running.";
+      $("system-foot").textContent = "API error: " + error.message;
+      $("last-updated").textContent = "Update failed";
+      console.error("CloudOps API error:", error);
+    }
+  }
+
+  async function checkEndpoint(endpoint) {
+    log("GET " + endpoint);
+    try {
+      const response = await fetch(endpoint, {cache:"no-store"});
+      const data = await response.json();
+      log("HTTP status: " + response.status);
+      log(JSON.stringify(data, null, 2));
+      log(response.ok ? "Result: request successful." : "Result: endpoint returned an error.");
+    } catch (error) {
+      log("Request failed: " + error.message);
+      log("Check that Uvicorn is running on http://127.0.0.1:8000");
+    }
+  }
+
+  $("refresh-btn").addEventListener("click", () => {
+    log("Refreshing live metrics...");
+    refreshMetrics();
+  });
+  $("health-btn").addEventListener("click", () => checkEndpoint("/api/health"));
+  $("ready-btn").addEventListener("click", () => checkEndpoint("/api/ready"));
+  $("clear-btn").addEventListener("click", () => {
+    $("terminal-output").textContent = "CloudOps Diagnostic Console\n--------------------------------";
+  });
+
+  $("scenario-btn").addEventListener("click", () => {
+    $("incident-output").textContent =
+`INCIDENT: High CPU utilization
+
+1. Confirm the alert and affected system.
+2. Check CPU usage in the dashboard.
+3. Run: top
+4. Find CPU-heavy processes: ps aux --sort=-%cpu | head
+5. Review warnings: journalctl -p warning -n 50
+6. Check whether the issue is persistent or temporary.
+7. Document evidence, impact, and corrective action.
+
+Do not terminate processes or restart services before understanding their impact.
+This is a training scenario and makes no real system changes.`;
+    log("Opened high-CPU investigation runbook.");
+  });
+
+  $("reset-btn").addEventListener("click", () => {
+    $("incident-output").textContent = "Scenario reset. No real system changes were made.";
+    log("Training scenario reset.");
+  });
+
+  refreshMetrics();
+  window.setInterval(refreshMetrics, 5000);
+})();
+</script>
+</body>
+</html>
+HTML

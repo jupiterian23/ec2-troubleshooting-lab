@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+
+# Local diagnostic output (keep private)
+incident-reports/diagnostic_*.txt
